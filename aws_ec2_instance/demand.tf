@@ -6,7 +6,8 @@ locals {
 # Note: network_interface can't be specified together with associate_public_ip_address
 ######
 resource "aws_instance" "this" {
-  count = "${!var.spot ? var.instance_count * (1 - local.is_t_instance_type) : 0}"
+  //count = "${!var.spot && !local.is_t_instance_type ? var.instance_count : 0}"
+  count = "${!var.spot ? var.instance_count : 0}"
 
   ami                    = "${var.ami}"
   instance_type          = "${var.instance_type}"
@@ -44,8 +45,9 @@ resource "aws_instance" "this" {
   }
 }
 
+/*
 resource "aws_instance" "this_t2" {
-  count = "${!var.spot ? var.instance_count * local.is_t_instance_type : 0}"
+  count = "${!var.spot && local.is_t_instance_type ? var.instance_count : 0}"
 
   ami                    = "${var.ami}"
   instance_type          = "${var.instance_type}"
@@ -85,4 +87,4 @@ resource "aws_instance" "this_t2" {
     # we have to ignore changes in the following arguments
     ignore_changes = ["private_ip", "root_block_device", "ebs_block_device"]
   }
-}
+}*/

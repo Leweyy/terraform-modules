@@ -1,18 +1,20 @@
 locals {
-  this_id                           = "${var.spot ? compact(concat(coalescelist(aws_instance.this.*.id, aws_instance.this_t2.*.id), list(""))) : compact(concat(coalescelist(aws_spot_instance_request.this.*.id, aws_spot_instance_request.this_t2.*.id), list("")))}"
-  this_availability_zone            = "${compact(concat(coalescelist(aws_instance.this.*.availability_zone, aws_instance.this_t2.*.availability_zone), list("")))}"
-  this_key_name                     = "${compact(concat(coalescelist(aws_instance.this.*.key_name, aws_instance.this_t2.*.key_name), list("")))}"
-  this_public_dns                   = "${var.spot ? compact(concat(coalescelist(aws_instance.this.*.public_dns, aws_instance.this_t2.*.public_dns), list(""))) : compact(concat(coalescelist(aws_spot_instance_request.this.*.public_dns, aws_spot_instance_request.this_t2.*.public_dns), list("")))}"
-  this_public_ip                    = "${var.spot ? compact(concat(coalescelist(aws_instance.this.*.public_ip, aws_instance.this_t2.*.public_ip), list(""))) : compact(concat(coalescelist(aws_spot_instance_request.this.*.public_ip, aws_spot_instance_request.this_t2.*.public_ip), list("")))}"
-  this_primary_network_interface_id = "${compact(concat(coalescelist(aws_instance.this.*.primary_network_interface_id, aws_instance.this_t2.*.primary_network_interface_id), list("")))}"
-  this_private_dns                  = "${var.spot ? compact(concat(coalescelist(aws_instance.this.*.private_dns, aws_instance.this_t2.*.private_dns), list(""))) : compact(concat(coalescelist(aws_spot_instance_request.this.*.private_dns, aws_spot_instance_request.this_t2.*.private_dns), list("")))}"
-  this_private_ip                   = "${var.spot ? compact(concat(coalescelist(aws_instance.this.*.private_ip, aws_instance.this_t2.*.private_ip), list(""))) : compact(concat(coalescelist(aws_spot_instance_request.this.*.private_ip, aws_spot_instance_request.this_t2.*.private_ip), list("")))}"
-  this_security_groups              = "${compact(concat(coalescelist(flatten(aws_instance.this.*.security_groups), flatten(aws_instance.this_t2.*.security_groups)), list("")))}"
-  this_vpc_security_group_ids       = "${compact(concat(coalescelist(flatten(aws_instance.this.*.vpc_security_group_ids), flatten(aws_instance.this_t2.*.vpc_security_group_ids)), list("")))}"
-  this_subnet_id                    = "${compact(concat(coalescelist(aws_instance.this.*.subnet_id, aws_instance.this_t2.*.subnet_id), list("")))}"
-  this_credit_specification         = "${aws_instance.this_t2.*.credit_specification}"
-  this_tags                         = "${coalescelist(flatten(aws_instance.this.*.tags), flatten(aws_instance.this_t2.*.tags))}"
-  this_volume_tags                  = "${coalescelist(flatten(aws_instance.this.*.volume_tags), flatten(aws_instance.this_t2.*.volume_tags))}"
+
+  this_id                           = "${split(",", var.spot ? join(",", aws_spot_instance_request.this.*.id) : join(",", aws_instance.this.*.id))}"
+  this_availability_zone            = "${split(",", var.spot ? join(",", aws_spot_instance_request.this.*.availability_zone) : join(",", aws_instance.this.*.availability_zone))}"
+  this_key_name                     = "${split(",", var.spot ? join(",", aws_spot_instance_request.this.*.key_name) : join(",", aws_instance.this.*.key_name))}"
+  this_public_dns                   = "${split(",", var.spot ? join(",", aws_spot_instance_request.this.*.public_dns) : join(",", aws_instance.this.*.public_dns))}"
+  this_public_ip                    = "${split(",", var.spot ? join(",", aws_spot_instance_request.this.*.public_ip) : join(",", aws_instance.this.*.public_ip))}"
+  this_primary_network_interface_id = "${split(",", var.spot ? join(",", aws_spot_instance_request.this.*.primary_network_interface_id) : join(",", aws_instance.this.*.primary_network_interface_id))}"
+  this_private_dns                  = "${split(",", var.spot ? join(",", aws_spot_instance_request.this.*.private_dns) : join(",", aws_instance.this.*.private_dns))}"
+  this_private_ip                   = "${split(",", var.spot ? join(",", aws_spot_instance_request.this.*.private_ip) : join(",", aws_instance.this.*.private_ip))}"
+  this_security_groups              = "${split(",", var.spot ? join(",", flatten(aws_spot_instance_request.this.*.security_groups)) : join(",", flatten(aws_instance.this.*.security_groups)))}"
+  this_vpc_security_group_ids       = "${split(",", var.spot ? join(",", flatten(aws_spot_instance_request.this.*.vpc_security_group_ids)) : join(",", flatten(aws_instance.this.*.vpc_security_group_ids)))}"
+  this_subnet_id                    = "${split(",", var.spot ? join(",", aws_spot_instance_request.this.*.subnet_id) : join(",", aws_instance.this.*.subnet_id))}"
+  //this_tags                         = "${split(",", var.spot ? join(",", aws_spot_instance_request.this.*.tags) : join(",", aws_instance.this.*.tags))}"
+  //this_volume_tags                  = "${split(",", var.spot ? join(",", aws_spot_instance_request.this.*.volume_tags) : join(",", aws_instance.this.*.volume_tags))}"
+  this_placement_group              = "${split(",", var.spot ? join(",", aws_spot_instance_request.this.*.placement_group) : join(",", aws_instance.this.*.placement_group))}"
+
 }
 
 output "id" {
@@ -27,7 +29,7 @@ output "availability_zone" {
 
 output "placement_group" {
   description = "List of placement groups of instances"
-  value       = ["${element(concat(aws_instance.this.*.placement_group, list("")), 0)}"]
+  value       = ["${local.this_placement_group}"]
 }
 
 output "key_name" {
@@ -72,15 +74,10 @@ output "vpc_security_group_ids" {
 
 output "subnet_id" {
   description = "List of IDs of VPC subnets of instances"
-  value       = ["${local.this_subnet_id}"]
+  value = ["${local.this_subnet_id}"]
 }
 
-output "credit_specification" {
-  description = "List of credit specification of instances"
-  value       = ["${local.this_credit_specification}"]
-}
-
-output "tags" {
+/*output "tags" {
   description = "List of tags of instances"
   value       = ["${local.this_tags}"]
 }
@@ -88,7 +85,11 @@ output "tags" {
 output "volume_tags" {
   description = "List of volume tags of instances"
   value       = ["${local.this_volume_tags}"]
-}
+}*/
+
+#==================
+# Spot
+#==================
 
 output "spot_bid_status" {
   description = "The current bid status of the Spot Instance Request."

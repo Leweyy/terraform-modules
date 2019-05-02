@@ -1,11 +1,12 @@
 locals {
-  is_t_instance_type = "${replace(var.instance_type, "/^t[23]{1}\\..*$/", "1") == "1" ? "1" : "0"}"
+  spot_is_t_instance_type = "${replace(var.instance_type, "/^t[23]{1}\\..*$/", "1") == "1" ? "1" : "0"}"
 }
 ######
 # EC2 spot instance
 ######
 resource "aws_spot_instance_request" "this" {
-  count = "${var.spot ? var.instance_count * (1 - local.is_t_instance_type) : 0}"
+  //count = "${var.spot && !local.spot_is_t_instance_type ? var.instance_count : 0}"
+  count = "${var.spot ? var.instance_count : 0}"
 
   ami                    = "${var.ami}"
   instance_type          = "${var.instance_type}"
@@ -40,8 +41,8 @@ resource "aws_spot_instance_request" "this" {
   instance_interruption_behaviour = "${var.instance_interruption_behaviour}"
   launch_group                    = "${var.launch_group}"
   block_duration_minutes          = "${var.block_duration_minutes}"
-  valid_from                      = "${var.valid_from}"
-  valid_until                     = "${var.valid_unitl}"
+  //valid_from                      = "${var.valid_from}"
+  //valid_until                     = "${var.valid_until}"
 
   timeouts {
     create = "${var.create_timeout}"
@@ -51,13 +52,14 @@ resource "aws_spot_instance_request" "this" {
   # Note: network_interface can't be specified together with associate_public_ip_address
   # network_interface = "${var.network_interface}"
 
-  tags = "${merge(var.tags, map("Name", format("%s-%d", var.name, count.index+1)))}"
+  tags        = "${merge(var.tags, map("Name", format("%s-%d", var.name, count.index+1)))}"
   volume_tags = "${merge(map("Name", (var.instance_count > 1) || (var.use_num_suffix == "true") ? format("%s-%d", var.name, count.index+1) : var.name), var.volume_tags)}"
 
 }
 
+/*
 resource "aws_spot_instance_request" "this_t2" {
-  count = "${var.spot ? var.instance_count * (1 - local.is_t_instance_type) : 0}"
+  count = "${var.spot && local.spot_is_t_instance_type ? var.instance_count : 0}"
 
   ami                    = "${var.ami}"
   instance_type          = "${var.instance_type}"
@@ -92,8 +94,8 @@ resource "aws_spot_instance_request" "this_t2" {
   instance_interruption_behaviour = "${var.instance_interruption_behaviour}"
   launch_group                    = "${var.launch_group}"
   block_duration_minutes          = "${var.block_duration_minutes}"
-  valid_from                      = "${var.valid_from}"
-  valid_until                     = "${var.valid_until}"
+  //valid_from                      = "${var.valid_from}"
+  //valid_until                     = "${var.valid_until}"
 
   timeouts {
     create = "${var.create_timeout}"
@@ -107,7 +109,7 @@ resource "aws_spot_instance_request" "this_t2" {
   # Note: network_interface can't be specified together with associate_public_ip_address
   # network_interface = "${var.network_interface}"
 
-  tags = "${merge(var.tags, map("Name", format("%s-%d", var.name, count.index+1)))}"
+  tags        = "${merge(var.tags, map("Name", format("%s-%d", var.name, count.index+1)))}"
   volume_tags = "${merge(map("Name", (var.instance_count > 1) || (var.use_num_suffix == "true") ? format("%s-%d", var.name, count.index+1) : var.name), var.volume_tags)}"
 
-}
+}*/
