@@ -140,3 +140,20 @@ variable "use_num_suffix" {
   description = "Always append numerical suffix to instance name, even if instance_count is 1"
   default     = "false"
 }
+
+# ==============
+# Spot Instances
+# ==============
+
+variable "spot" {
+  description = "place the instance on spot instances"
+  default     = "false"
+}
+
+variable "spot_bid_min" {
+  default = ""
+}
+
+variable "spot_bid_max" {
+  default = ""
+}
