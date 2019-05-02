@@ -1,17 +1,16 @@
 locals {
   is_t_instance_type = "${replace(var.instance_type, "/^t[23]{1}\\..*$/", "1") == "1" ? "1" : "0"}"
 }
-
 ######
-# Note: network_interface can't be specified together with associate_public_ip_address
+# EC2 spot instance
 ######
-resource "aws_instance" "this" {
-  count = "${var.instance_count * (1 - local.is_t_instance_type)}"
+resource "aws_spot_instance_request" "this" {
+  count = "${var.spot ? var.instance_count * (1 - local.is_t_instance_type) : 0}"
 
   ami                    = "${var.ami}"
   instance_type          = "${var.instance_type}"
   user_data              = "${var.user_data}"
-  subnet_id              = "${element(distinct(compact(concat(list(var.subnet_id), var.subnet_ids))),count.index)}"
+  subnet_id              = "${var.subnet_id}"
   key_name               = "${var.key_name}"
   monitoring             = "${var.monitoring}"
   vpc_security_group_ids = ["${var.vpc_security_group_ids}"]
@@ -23,6 +22,7 @@ resource "aws_instance" "this" {
   ipv6_addresses              = "${var.ipv6_addresses}"
 
   ebs_optimized          = "${var.ebs_optimized}"
+  volume_tags            = "${var.volume_tags}"
   root_block_device      = "${var.root_block_device}"
   ebs_block_device       = "${var.ebs_block_device}"
   ephemeral_block_device = "${var.ephemeral_block_device}"
@@ -30,27 +30,39 @@ resource "aws_instance" "this" {
   source_dest_check                    = "${var.source_dest_check}"
   disable_api_termination              = "${var.disable_api_termination}"
   instance_initiated_shutdown_behavior = "${var.instance_initiated_shutdown_behavior}"
+  availability_zone                    = "${var.availability_zone}"
   placement_group                      = "${var.placement_group}"
   tenancy                              = "${var.tenancy}"
 
-  tags        = "${merge(map("Name", (var.instance_count > 1) || (var.use_num_suffix == "true") ? format("%s-%d", var.name, count.index+1) : var.name), var.tags)}"
+  spot_price                      = "${var.spot_price}"
+  wait_for_fulfillment            = "${var.wait_for_fulfillment}"
+  spot_type                       = "${var.spot_type}"
+  instance_interruption_behaviour = "${var.instance_interruption_behaviour}"
+  launch_group                    = "${var.launch_group}"
+  block_duration_minutes          = "${var.block_duration_minutes}"
+  valid_from                      = "${var.valid_from}"
+  valid_until                     = "${var.valid_unitl}"
+
+  timeouts {
+    create = "${var.create_timeout}"
+    delete = "${var.delete_timeout}"
+  }
+
+  # Note: network_interface can't be specified together with associate_public_ip_address
+  # network_interface = "${var.network_interface}"
+
+  tags = "${merge(var.tags, map("Name", format("%s-%d", var.name, count.index+1)))}"
   volume_tags = "${merge(map("Name", (var.instance_count > 1) || (var.use_num_suffix == "true") ? format("%s-%d", var.name, count.index+1) : var.name), var.volume_tags)}"
 
-  lifecycle {
-    # Due to several known issues in Terraform AWS provider related to arguments of aws_instance:
-    # (eg, https://github.com/terraform-providers/terraform-provider-aws/issues/2036)
-    # we have to ignore changes in the following arguments
-    ignore_changes = ["private_ip", "root_block_device", "ebs_block_device"]
-  }
 }
 
-resource "aws_instance" "this_t2" {
-  count = "${var.instance_count * local.is_t_instance_type}"
+resource "aws_spot_instance_request" "this_t2" {
+  count = "${var.spot ? var.instance_count * (1 - local.is_t_instance_type) : 0}"
 
   ami                    = "${var.ami}"
   instance_type          = "${var.instance_type}"
   user_data              = "${var.user_data}"
-  subnet_id              = "${element(distinct(compact(concat(list(var.subnet_id), var.subnet_ids))),count.index)}"
+  subnet_id              = "${var.subnet_id}"
   key_name               = "${var.key_name}"
   monitoring             = "${var.monitoring}"
   vpc_security_group_ids = ["${var.vpc_security_group_ids}"]
@@ -62,6 +74,7 @@ resource "aws_instance" "this_t2" {
   ipv6_addresses              = "${var.ipv6_addresses}"
 
   ebs_optimized          = "${var.ebs_optimized}"
+  volume_tags            = "${var.volume_tags}"
   root_block_device      = "${var.root_block_device}"
   ebs_block_device       = "${var.ebs_block_device}"
   ephemeral_block_device = "${var.ephemeral_block_device}"
@@ -69,20 +82,32 @@ resource "aws_instance" "this_t2" {
   source_dest_check                    = "${var.source_dest_check}"
   disable_api_termination              = "${var.disable_api_termination}"
   instance_initiated_shutdown_behavior = "${var.instance_initiated_shutdown_behavior}"
+  availability_zone                    = "${var.availability_zone}"
   placement_group                      = "${var.placement_group}"
   tenancy                              = "${var.tenancy}"
+
+  spot_price                      = "${var.spot_price}"
+  wait_for_fulfillment            = "${var.wait_for_fulfillment}"
+  spot_type                       = "${var.spot_type}"
+  instance_interruption_behaviour = "${var.instance_interruption_behaviour}"
+  launch_group                    = "${var.launch_group}"
+  block_duration_minutes          = "${var.block_duration_minutes}"
+  valid_from                      = "${var.valid_from}"
+  valid_until                     = "${var.valid_until}"
+
+  timeouts {
+    create = "${var.create_timeout}"
+    delete = "${var.delete_timeout}"
+  }
 
   credit_specification {
     cpu_credits = "${var.cpu_credits}"
   }
 
-  tags        = "${merge(map("Name", (var.instance_count > 1) || (var.use_num_suffix == "true") ? format("%s-%d", var.name, count.index+1) : var.name), var.tags)}"
+  # Note: network_interface can't be specified together with associate_public_ip_address
+  # network_interface = "${var.network_interface}"
+
+  tags = "${merge(var.tags, map("Name", format("%s-%d", var.name, count.index+1)))}"
   volume_tags = "${merge(map("Name", (var.instance_count > 1) || (var.use_num_suffix == "true") ? format("%s-%d", var.name, count.index+1) : var.name), var.volume_tags)}"
 
-  lifecycle {
-    # Due to several known issues in Terraform AWS provider related to arguments of aws_instance:
-    # (eg, https://github.com/terraform-providers/terraform-provider-aws/issues/2036)
-    # we have to ignore changes in the following arguments
-    ignore_changes = ["private_ip", "root_block_device", "ebs_block_device"]
-  }
 }

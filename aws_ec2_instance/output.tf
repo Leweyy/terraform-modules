@@ -1,12 +1,12 @@
 locals {
-  this_id                           = "${compact(concat(coalescelist(aws_instance.this.*.id, aws_instance.this_t2.*.id), list("")))}"
+  this_id                           = "${var.spot ? compact(concat(coalescelist(aws_instance.this.*.id, aws_instance.this_t2.*.id), list(""))) : compact(concat(coalescelist(aws_spot_instance_request.this.*.id, aws_spot_instance_request.this_t2.*.id), list("")))}"
   this_availability_zone            = "${compact(concat(coalescelist(aws_instance.this.*.availability_zone, aws_instance.this_t2.*.availability_zone), list("")))}"
   this_key_name                     = "${compact(concat(coalescelist(aws_instance.this.*.key_name, aws_instance.this_t2.*.key_name), list("")))}"
-  this_public_dns                   = "${compact(concat(coalescelist(aws_instance.this.*.public_dns, aws_instance.this_t2.*.public_dns), list("")))}"
-  this_public_ip                    = "${compact(concat(coalescelist(aws_instance.this.*.public_ip, aws_instance.this_t2.*.public_ip), list("")))}"
+  this_public_dns                   = "${var.spot ? compact(concat(coalescelist(aws_instance.this.*.public_dns, aws_instance.this_t2.*.public_dns), list(""))) : compact(concat(coalescelist(aws_spot_instance_request.this.*.public_dns, aws_spot_instance_request.this_t2.*.public_dns), list("")))}"
+  this_public_ip                    = "${var.spot ? compact(concat(coalescelist(aws_instance.this.*.public_ip, aws_instance.this_t2.*.public_ip), list(""))) : compact(concat(coalescelist(aws_spot_instance_request.this.*.public_ip, aws_spot_instance_request.this_t2.*.public_ip), list("")))}"
   this_primary_network_interface_id = "${compact(concat(coalescelist(aws_instance.this.*.primary_network_interface_id, aws_instance.this_t2.*.primary_network_interface_id), list("")))}"
-  this_private_dns                  = "${compact(concat(coalescelist(aws_instance.this.*.private_dns, aws_instance.this_t2.*.private_dns), list("")))}"
-  this_private_ip                   = "${compact(concat(coalescelist(aws_instance.this.*.private_ip, aws_instance.this_t2.*.private_ip), list("")))}"
+  this_private_dns                  = "${var.spot ? compact(concat(coalescelist(aws_instance.this.*.private_dns, aws_instance.this_t2.*.private_dns), list(""))) : compact(concat(coalescelist(aws_spot_instance_request.this.*.private_dns, aws_spot_instance_request.this_t2.*.private_dns), list("")))}"
+  this_private_ip                   = "${var.spot ? compact(concat(coalescelist(aws_instance.this.*.private_ip, aws_instance.this_t2.*.private_ip), list(""))) : compact(concat(coalescelist(aws_spot_instance_request.this.*.private_ip, aws_spot_instance_request.this_t2.*.private_ip), list("")))}"
   this_security_groups              = "${compact(concat(coalescelist(flatten(aws_instance.this.*.security_groups), flatten(aws_instance.this_t2.*.security_groups)), list("")))}"
   this_vpc_security_group_ids       = "${compact(concat(coalescelist(flatten(aws_instance.this.*.vpc_security_group_ids), flatten(aws_instance.this_t2.*.vpc_security_group_ids)), list("")))}"
   this_subnet_id                    = "${compact(concat(coalescelist(aws_instance.this.*.subnet_id, aws_instance.this_t2.*.subnet_id), list("")))}"
@@ -88,4 +88,19 @@ output "tags" {
 output "volume_tags" {
   description = "List of volume tags of instances"
   value       = ["${local.this_volume_tags}"]
+}
+
+output "spot_bid_status" {
+  description = "The current bid status of the Spot Instance Request."
+  value       = ["${aws_spot_instance_request.this.*.spot_bid_status}"]
+}
+
+output "spot_request_state" {
+  description = "The current request state of the Spot Instance Request."
+  value       = ["${aws_spot_instance_request.this.*.spot_request_state}"]
+}
+
+output "spot_instance_id" {
+  description = "The Instance ID (if any) that is currently fulfilling the Spot Instance request."
+  value       = ["${aws_spot_instance_request.this.*.spot_instance_id}"]
 }
